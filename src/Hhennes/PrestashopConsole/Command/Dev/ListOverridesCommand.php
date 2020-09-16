@@ -25,36 +25,43 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
 
+use Hhennes\PrestashopConsole\Command\AbstractListCommand;
+
 /**
  * Commande qui permet de lister les overrides en place sur le site
  *
  */
-class ListOverridesCommand extends Command
+class ListOverridesCommand extends AbstractListCommand
 {
     protected function configure()
     {
         $this
             ->setName('dev:list-overrides')
             ->setDescription('List overrides of classes and controllers in the project');
+        parent::configure();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $outputString = '';
+        $datas = [];
         try {
             $finder = new Finder();
             $finder->files()->in(_PS_OVERRIDE_DIR_)->name('*.php')->notName('index.php');
 
             foreach ($finder as $file) {
-                $outputString.= $file->getRelativePathname()."\n";
+                $datas[] = [
+                    'path' => $file->getRelativePathname()
+                ];
             }
         } catch (\Exception $e) {
             $output->writeln("<info>ERROR:" . $e->getMessage() . "</info>");
             return 1;
         }
-        if ($outputString == '') {
-            $outputString = 'No class or controllers overrides on this project';
+        // Write result
+        if (sizeof($datas)) {
+            $this->writeDatas($output, $datas, 'override', $input->getOption(AbstractListCommand::FORMAT_OPT_NAME));
+        } else {
+            $output->writeln('<info>No override found on this project');
         }
-        $output->writeln("<info>".$outputString."</info>");
     }
 }

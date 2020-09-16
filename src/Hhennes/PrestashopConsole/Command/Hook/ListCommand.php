@@ -28,11 +28,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Helper\Table;
 use Hook;
 
+use Hhennes\PrestashopConsole\Command\AbstractListCommand;
+
 /**
  * Class Module
  * List hook with registered modules
  */
-class ListCommand extends Command
+class ListCommand extends AbstractListCommand
 {
     /**
      * @inheritDoc
@@ -42,6 +44,7 @@ class ListCommand extends Command
         $this
             ->setName('hook:list')
             ->setDescription('List all hooks registered in database');
+        parent::configure();
     }
 
     /**
@@ -52,24 +55,18 @@ class ListCommand extends Command
         //Get Hooks list
         $hooks = Hook::getHooks();
 
-        //Extract only hooks name
-        $hooks = array_map(function ($row) {
-            return $row['name'];
-        }, $hooks);
-
-        //Sort hooks by name
-        usort($hooks, array($this, "cmp"));
-
-        //Init Table
-        $table = new Table($output);
-        $table->setHeaders(['Hook Name']);
-
-        foreach ($hooks as $hook) {
-            $table->addRow([$hook]);
+        if (sizeof($hooks)) {
+            //Extract only hooks name
+            $hooks = array_map(function ($row) {
+                return ['hook_name' => $row['name']];
+            }, $hooks);
+            //Sort hooks by name
+            usort($hooks, array($this, "cmp"));
+            // Write the datas
+            $this->writeDatas($output, $hooks, "hook", $input->getOption(AbstractListCommand::FORMAT_OPT_NAME));
+        } else {
+            $output->writeln('<info>No hook found on this project');
         }
-
-        //Display result
-        $table->render();
     }
 
     /**
@@ -80,6 +77,6 @@ class ListCommand extends Command
      */
     private function cmp($a, $b)
     {
-        return strcmp($a, $b);
+        return strcmp($a['hook_name'], $b['hook_name']);
     }
 }

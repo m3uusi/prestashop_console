@@ -22,12 +22,15 @@ namespace Hhennes\PrestashopConsole\Command\Admin\User;
 
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Helper\Table;
 use Configuration;
 use Db;
 
-class ListCommand extends Command
+use Hhennes\PrestashopConsole\Command\AbstractListCommand;
+
+class ListCommand extends AbstractListCommand
 {
     protected function configure()
     {
@@ -35,12 +38,14 @@ class ListCommand extends Command
             ->setName('admin:user:list')
             ->setDescription('List admin users')
             ->setHelp('List admin users registered in employee table');
+        
+        parent::configure();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         //Function Employee::getEmployees() has not enough information , use db query instead
-        $employeesQuery = "SELECT e.email,e.firstname,e.lastname,e.active,e.last_connection_date,p.name
+        $employeesQuery = "SELECT e.email,e.firstname,e.lastname,p.name,e.active,e.last_connection_date
                            FROM " . _DB_PREFIX_ . "employee e
                            LEFT JOIN " . _DB_PREFIX_ . "profile_lang p ON ( 
                            e.id_profile = p.id_profile AND p.id_lang=" . Configuration::get('PS_LANG_DEFAULT')
@@ -48,21 +53,7 @@ class ListCommand extends Command
 
         $employees = Db::getInstance()->executeS($employeesQuery);
         if ($employees) {
-            $table = new Table($output);
-            $table->setHeaders(['email', 'firstname', 'lastname', 'profile', 'active', 'last_connection_date']);
-            foreach ($employees as $employee) {
-                $table->addRow(
-                    [
-                        $employee['email'],
-                        $employee['firstname'],
-                        $employee['lastname'],
-                        $employee['name'],
-                        $employee['active'],
-                        $employee['last_connection_date'],
-                    ]
-                );
-            }
-            $table->render();
+            $this->writeDatas($output, $employees, "employee", $input->getOption(AbstractListCommand::FORMAT_OPT_NAME));
         } else {
             $output->writeln('<error>No admin user on this shop</error>');
             return 1;

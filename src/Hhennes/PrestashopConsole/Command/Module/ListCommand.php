@@ -23,17 +23,18 @@
 namespace Hhennes\PrestashopConsole\Command\Module;
 
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Module;
 
+use Hhennes\PrestashopConsole\Command\AbstractListCommand;
+
 /**
  * Commande qui permet de récupérer la liste des modules installé
  *
  */
-class ListCommand extends Command
+class ListCommand extends AbstractListCommand
 {
     protected function configure()
     {
@@ -64,6 +65,8 @@ class ListCommand extends Command
                 InputOption::VALUE_NONE,
                 'List only not installed modules'
             );
+
+        parent::configure();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -116,23 +119,23 @@ class ListCommand extends Command
             });
         }
 
-        $output->writeln("<info>Currently module on disk:</info>");
-
-        $nr = 0;
-        $table = new Table($output);
-        $table->setHeaders(['Name', 'Version', 'Installed', 'Active']);
+        $datas = [];
         foreach ($modules as $module) {
-            $table->addRow([
-                $module->name,
-                $module->version,
-                ((bool)($module->installed) ? 'true' : 'false'),
-                ((bool)($module->active) ? 'true' : 'false')
-            ]);
-            $nr++;
+            $datas[] = [
+                'Name' => $module->name,
+                'Version' => $module->version,
+                'Installed' => ((bool)($module->installed) ? 'true' : 'false'),
+                'Active' => ((bool)($module->active) ? 'true' : 'false')
+            ];
         }
+        $format = $input->getOption(AbstractListCommand::FORMAT_OPT_NAME);
+        if ("txt" === $format)
+            $output->writeln("<info>Modules currently on disk:</info>");
 
-        $table->render();
-        $output->writeln("<info>Total modules on disk: $nr</info>");
+        $this->writeDatas($output, $datas, "module", $format);
+
+        if ("txt" === $format)
+            $output->writeln("<info>Total modules on disk: $nr</info>");
     }
 
     private function cmp($a, $b)

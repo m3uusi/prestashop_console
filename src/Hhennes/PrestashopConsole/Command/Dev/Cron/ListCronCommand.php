@@ -26,7 +26,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Helper\Table;
 use Module;
 
-class ListCronCommand extends Command
+use Hhennes\PrestashopConsole\Command\AbstractListCommand;
+
+class ListCronCommand extends AbstractListCommand
 {
 
     /** @var string cron Module Name */
@@ -37,40 +39,40 @@ class ListCronCommand extends Command
         $this
                 ->setName('dev:cron:list')
                 ->setDescription('List cron tasks configured with the module cronjobs');
+        
+        parent::configure();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if ($module = Module::getInstanceByName($this->_cronModuleName)) {
-            if (!Module::isInstalled($module->name) || !$module->active) {
-                $output->writeln('<error>' . $this->_cronModuleName . ' is not active or installed');
-                return 1;
-            }
-            
-            $output->writeln('<info>Configured cron jobs</info>');
-
-            \CronJobsForms::init($module);
-            $cronJobs = \CronJobsForms::getTasksListValues();
-
-            $table = new Table($output);
-            $table->setHeaders(['id_cronjob','description', 'task', 'hour', 'day', 'month', 'week_day', 'last_execution', 'active']);
-            foreach ($cronJobs as $cronJob) {
-                $table->addRow([
-                    $cronJob['id_cronjob'],
-                    $cronJob['description'],
-                    $cronJob['task'],
-                    $cronJob['hour'],
-                    $cronJob['day'],
-                    $cronJob['month'],
-                    $cronJob['week_day'],
-                    $cronJob['last_execution'],
-                    $cronJob['active']
-                    ]);
-            }
-            $table->render();
-        } else {
-            $output->writeln('<error>' . $this->_cronModuleName . ' is not installed');
+        $module = Module::getInstanceByName($this->_cronModuleName);
+        // Check that module is found
+        if (!$module) {
+            $output->writeln('<error>' . $this->_cronModuleName . ' is not installed</error>');
             return 1;
+        }
+        // Check that module is installed and active
+        if (!Module::isInstalled($module->name) || !$module->active) {
+            $output->writeln('<error>' . $this->_cronModuleName . ' is not active or installed');
+            return 1;
+        }
+
+        \CronJobsForms::init($module);
+        $cronJobs = \CronJobsForms::getTasksListValues();
+
+        foreach ($cronJobs as $cronJob) {
+            // Keep only the datas we want to display
+            $data = [];
+            foreach (['id_cronjob','description', 'task', 'hour', 'day', 'month', 'week_day', 'last_execution', 'active'] as $key) {
+                $data[$key] = $cronJob[$key];
+            }
+            $datas[] = $data;
+        }
+
+        if (sizeof($datas)) {
+            $this->writeDatas($output, $datas, 'cron_job', $input->getOption(AbstractListCommand::FORMAT_OPT_NAME));
+        } else {
+            $output->writeln('<info>No cron_job found on this project');
         }
     }
 }

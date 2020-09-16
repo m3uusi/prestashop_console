@@ -67,6 +67,11 @@ class PrestashopConsoleApplication extends BaseApplication
         $customCommands = array();
         if (sizeof($commands)) {
             foreach ($commands as $command) {
+                // Ignore abstract classes
+                if (FALSE !== strpos($command, "Abstract")) {
+                    continue;
+                }
+
                 $classPath = 'Hhennes\\PrestashopConsole\\Command\\' . str_replace(
                     '/',
                     "\\",

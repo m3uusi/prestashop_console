@@ -28,10 +28,12 @@ use Symfony\Component\Console\Helper\Table;
 use Module;
 use Tab;
 
+use Hhennes\PrestashopConsole\Command\AbstractListCommand;
+
 /**
  * This command list module tabs
  */
-class ListCommand extends Command
+class ListCommand extends AbstractListCommand
 {
     protected function configure()
     {
@@ -43,6 +45,7 @@ class ListCommand extends Command
                 InputArgument::REQUIRED,
                 'module name'
             );
+        parent::configure();
     }
 
     /**
@@ -57,14 +60,20 @@ class ListCommand extends Command
             $tabs = Tab::getCollectionFromModule($moduleName);
             $results = $tabs->getResults();
             if (count($results)) {
-                $output->writeln('<info>Module ' . $moduleName . 'admin tabs</info>');
-                $table = new Table($output);
-                $table->setHeaders(['id', 'class', 'label']);
+                $datas = [];
                 foreach ($results as $tab) {
                     /** @var Tab $tab */
-                    $table->addRow([$tab->id, $tab->class_name, $tab->name]);
+                    $datas[] = [
+                        'id' => $tab->id, 
+                        'class' => $tab->class_name, 
+                        'label' => $tab->name
+                    ];
                 }
-                $table->render();
+                // Header only in text mode
+                if ("txt" === $input->getOption(AbstractListCommand::FORMAT_OPT_NAME))
+                    $output->writeln('<info>Module ' . $moduleName . 'admin tabs</info>');
+                // Write results
+                $this->writeDatas($output, $datas, "admin_tab", $input->getOption(AbstractListCommand::FORMAT_OPT_NAME));
             } else {
                 $output->writeln('<info>Module ' . $moduleName . ' has no admin tabs');
             }

@@ -27,11 +27,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Helper\Table;
 use Module;
 
+use Hhennes\PrestashopConsole\Command\AbstractListCommand;
+
 /**
  * Commande qui permet de lister les hooks d'un module
  *
  */
-class ListModuleHooksCommand extends Command
+class ListModuleHooksCommand extends AbstractListCommand
 {
     protected function configure()
     {
@@ -43,6 +45,7 @@ class ListModuleHooksCommand extends Command
                     InputArgument::REQUIRED,
                     'module name'
                 );
+        parent::configure();
     }
 
     /**
@@ -64,20 +67,17 @@ class ListModuleHooksCommand extends Command
                 $isHooked = (int)$module->getPosition($hook['id_hook']);
                 if ($isHooked != 0) {
                     $moduleHooks[] = [
-                        'name' => $hook['name'] ,
+                        'hook_name' => $hook['name'] ,
                         'position' => $isHooked
                     ];
                 }
             }
 
             if (count($moduleHooks)) {
-                $output->writeln('<info>The module ' . $moduleName . ' is linked on the folowing hooks :</info>');
-                $table = new Table($output);
-                $table->setHeaders(['Hook Name','Position']);
-                foreach ($moduleHooks as $moduleHook) {
-                    $table->addRow([$moduleHook['name'],$moduleHook['position']]);
-                }
-                $table->render();
+                if ("txt"=== $input->getOption(AbstractListCommand::FORMAT_OPT_NAME))
+                    $output->writeln('<info>The module ' . $moduleName . ' is linked on the folowing hooks :</info>');
+                // Render datas
+                $this->writeDatas($output, $moduleHooks, "hook", $input->getOption(AbstractListCommand::FORMAT_OPT_NAME));
             } else {
                 $output->writeln('<info>The module is not hooked</info>');
             }
